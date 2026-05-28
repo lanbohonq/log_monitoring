@@ -1,0 +1,14 @@
+{
+  "environments": [
+    {
+      "name": "<env_name>",
+      "host": "<host>",
+      "port": <port>,
+      "username": "<username>",
+      "password": "<password>",
+      "root_user": "<root_user>",
+      "root_pass": "<root_pass>",
+      "log_path": "/path/to/.log"
+    }
+  ]
+}
