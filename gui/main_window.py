@@ -136,10 +136,11 @@ class MainWindow(QMainWindow):
 
         # Update filtered view based on checkboxes
         checked = self.filter_widget.get_checked()
+        auto_scroll = self.search_bar.is_auto_scroll()
         if level and level in checked:
-            self.filtered_log.append_log(line, level)
+            self.filtered_log.append_log(line, level, auto_scroll)
         elif not level:
-            self.filtered_log.append_log(line, level)
+            self.filtered_log.append_log(line, level, auto_scroll)
 
     def _on_status_changed(self, msg: str):
         """Handle status message."""
@@ -184,14 +185,15 @@ class MainWindow(QMainWindow):
         self.filtered_log.clear()
         # Re-filter from full log content
         full_text = self.full_log.toPlainText()
+        auto_scroll = self.search_bar.is_auto_scroll()
         for line in full_text.split("\n"):
             if not line.strip():
                 continue
             level = detect_level(line)
             if level and level in checked:
-                self.filtered_log.append_log(line, level)
+                self.filtered_log.append_log(line, level, auto_scroll)
             elif not level:
-                self.filtered_log.append_log(line, level)
+                self.filtered_log.append_log(line, level, auto_scroll)
 
         # Re-trigger search on the new filtered content
         self._on_search()

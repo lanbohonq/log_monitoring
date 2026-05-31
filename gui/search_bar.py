@@ -6,7 +6,7 @@ from PySide6.QtCore import Signal, Qt
 
 
 class SearchBar(QWidget):
-    """Search bar with keyword input and prev/next navigation."""
+    """Search bar with keyword input, prev/next navigation, and auto-scroll toggle."""
 
     search_changed = Signal()
     navigate = Signal()
@@ -15,6 +15,7 @@ class SearchBar(QWidget):
         super().__init__(parent)
         self._matches = []
         self._current_index = -1
+        self._auto_scroll = False
         self._setup_ui()
 
     def _setup_ui(self):
@@ -38,17 +39,31 @@ class SearchBar(QWidget):
         self.match_label.setMinimumWidth(60)
         self.match_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
+        self.btn_scroll = QPushButton("滚动:关")
+        self.btn_scroll.setFixedWidth(60)
+        self.btn_scroll.setCheckable(True)
+        self.btn_scroll.setChecked(False)
+        self.btn_scroll.toggled.connect(self._on_scroll_toggled)
+
         layout.addWidget(QLabel("搜索:"))
         layout.addWidget(self.input)
         layout.addWidget(self.btn_prev)
         layout.addWidget(self.btn_next)
         layout.addWidget(self.match_label)
         layout.addStretch()
+        layout.addWidget(self.btn_scroll)
 
         self.input.returnPressed.connect(self.find_next)
         self.btn_prev.clicked.connect(self.find_prev)
         self.btn_next.clicked.connect(self.find_next)
         self.input.textChanged.connect(self._on_text_changed)
+
+    def _on_scroll_toggled(self, checked: bool):
+        self._auto_scroll = checked
+        self.btn_scroll.setText("滚动:开" if checked else "滚动:关")
+
+    def is_auto_scroll(self) -> bool:
+        return self._auto_scroll
 
     def _on_text_changed(self):
         self.search_changed.emit()

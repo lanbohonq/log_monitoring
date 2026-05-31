@@ -35,30 +35,45 @@ class LogWidget(QTextEdit):
         self.setFontFamily("Consolas")
         self._line_count = 0
 
-    def append_log(self, text: str, level: str | None = None):
+    def append_log(self, text: str, level: str | None = None, auto_scroll: bool = True):
         """Append a log line with optional color."""
         if level is None:
             level = detect_level(text)
 
-        cursor = self.textCursor()
-        cursor.movePosition(QTextCursor.MoveOperation.End)
-        self.setTextCursor(cursor)
+        if auto_scroll:
+            cursor = self.textCursor()
+            cursor.movePosition(QTextCursor.MoveOperation.End)
+            self.setTextCursor(cursor)
 
-        if level and level in COLORS:
-            self.setTextColor(COLORS[level])
+            if level and level in COLORS:
+                self.setTextColor(COLORS[level])
+            else:
+                self.setTextColor(QColor("#FFFFFF"))
+
+            self.insertPlainText(text + "\n")
+
+            scrollbar = self.verticalScrollBar()
+            scrollbar.setValue(scrollbar.maximum())
         else:
-            self.setTextColor(QColor("#FFFFFF"))
+            # Use a temporary cursor to avoid moving the visible cursor
+            cursor = QTextCursor(self.document())
+            cursor.movePosition(QTextCursor.MoveOperation.End)
 
-        self.insertPlainText(text + "\n")
+            if level and level in COLORS:
+                color = COLORS[level]
+            else:
+                color = QColor("#FFFFFF")
+            fmt = cursor.charFormat()
+            fmt.setForeground(color)
+            cursor.setCharFormat(fmt)
+
+            cursor.insertText(text + "\n")
+
         self._line_count += 1
 
         # Trim old lines
         if self._line_count > MAX_LINES:
             self._trim_lines()
-
-        # Auto-scroll
-        scrollbar = self.verticalScrollBar()
-        scrollbar.setValue(scrollbar.maximum())
 
     def _trim_lines(self):
         """Remove oldest lines to stay under MAX_LINES."""
