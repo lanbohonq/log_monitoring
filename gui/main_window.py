@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from gui.log_widget import LogWidget, detect_level
 from gui.filter_widget import FilterWidget
+from gui.search_bar import SearchBar
 from gui.env_dialog import EnvDialog
 from gui.ssh_worker import SSHWorker
 from core import env_manager
@@ -59,15 +60,24 @@ class MainWindow(QMainWindow):
 
         # Bottom area
         bottom = QWidget()
-        bottom_layout = QHBoxLayout(bottom)
+        bottom_layout = QVBoxLayout(bottom)
         bottom_layout.setContentsMargins(0, 0, 0, 0)
 
+        # Search bar (full width)
+        self.search_bar = SearchBar()
+        self.search_bar.search_changed.connect(self._on_search)
+        self.search_bar.navigate.connect(self._on_navigate)
+        bottom_layout.addWidget(self.search_bar)
+
+        # Filter checkboxes (left) + filtered log (right)
+        content_row = QHBoxLayout()
         self.filter_widget = FilterWidget()
         self.filter_widget.filter_changed.connect(self._on_filter_changed)
-        bottom_layout.addWidget(self.filter_widget)
+        content_row.addWidget(self.filter_widget)
 
         self.filtered_log = LogWidget()
-        bottom_layout.addWidget(self.filtered_log, 1)
+        content_row.addWidget(self.filtered_log, 1)
+        bottom_layout.addLayout(content_row, 1)
 
         splitter.addWidget(bottom)
         splitter.setSizes([500, 200])
@@ -146,6 +156,29 @@ class MainWindow(QMainWindow):
         self.btn_connect.setEnabled(True)
         self.btn_disconnect.setEnabled(False)
 
+    def _on_search(self):
+        """Handle search text/case change: recompute matches and scroll to first."""
+        text = self.filtered_log.toPlainText()
+        self.search_bar.update_matches(text)
+        self._scroll_to_current_match()
+
+    def _on_navigate(self):
+        """Handle prev/next: scroll to current match without recomputing."""
+        self._scroll_to_current_match()
+
+    def _scroll_to_current_match(self):
+        """Scroll the filtered log to the current search match."""
+        pos = self.search_bar.current_position()
+        keyword = self.search_bar.current_keyword()
+        if pos is None or not keyword:
+            return
+
+        cursor = self.filtered_log.textCursor()
+        cursor.setPosition(pos)
+        cursor.setPosition(pos + len(keyword), cursor.MoveMode.KeepAnchor)
+        self.filtered_log.setTextCursor(cursor)
+        self.filtered_log.ensureCursorVisible()
+
     def _on_filter_changed(self, checked: list[str]):
         """Handle filter change - rebuild filtered log."""
         self.filtered_log.clear()
@@ -159,6 +192,9 @@ class MainWindow(QMainWindow):
                 self.filtered_log.append_log(line, level)
             elif not level:
                 self.filtered_log.append_log(line, level)
+
+        # Re-trigger search on the new filtered content
+        self._on_search()
 
     def closeEvent(self, event):
         """Clean up on window close."""
