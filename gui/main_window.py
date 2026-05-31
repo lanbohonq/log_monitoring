@@ -76,6 +76,9 @@ class MainWindow(QMainWindow):
         content_row.addWidget(self.filter_widget)
 
         self.filtered_log = LogWidget()
+        self.filtered_log.setStyleSheet(
+            "QTextEdit { selection-background-color: #FF9800; selection-color: #000000; }"
+        )
         content_row.addWidget(self.filtered_log, 1)
         bottom_layout.addLayout(content_row, 1)
 

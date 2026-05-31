@@ -44,15 +44,16 @@ The codebase has two layers of the same modules:
 - `env_manager.py` — CRUD operations for environment configs stored in `environments.json`
 
 **GUI modules (`gui/`):**
-- `main_window.py` — Three-area layout: top toolbar (env selector + connect/disconnect), middle full log, bottom filters + filtered log. Has a menu bar with environment management dialog.
+- `main_window.py` — Layout: top toolbar (env selector, connect/disconnect, manage env button), middle full log, bottom row with search bar (full width), then filter checkboxes (left) + filtered log (right). Search bar connects to `search_changed` (recompute matches) and `navigate` (scroll to current match) signals.
 - `ssh_worker.py` — QThread wrapper around `core.ssh_client.SSHClient`, emits Qt signals (`log_received`, `status_changed`, `error_occurred`, `finished`)
-- `log_widget.py` — QTextEdit-based log display with Qt color mapping. Caps at 10,000 lines (`MAX_LINES`), auto-trims oldest. Contains its own `detect_level()` function (duplicates the regex from root `log_viewer.py`).
+- `log_widget.py` — QTextEdit-based log display with Qt color mapping. Caps at 10,000 lines (`MAX_LINES`), auto-trims oldest. `append_log(text, level, auto_scroll)` — when `auto_scroll=False`, uses a temporary cursor to avoid moving the visible cursor/viewport.
 - `filter_widget.py` — Checkbox widget for log level filtering, emits `filter_changed` signal
-- `env_dialog.py` — QDialog for managing saved environments
+- `search_bar.py` — Search bar with keyword input, prev/next navigation buttons, match count label, and auto-scroll toggle button ("日志滚动"). Default auto-scroll is off. `update_matches(text)` recomputes match positions; `find_next()`/`find_prev()` emit `navigate` signal without recomputing.
+- `env_dialog.py` — QDialog for managing saved environments. `EnvEditDialog` has a "测试连接" button that uses `TestConnectionWorker` (QThread) to async-test SSH + root access. Password fields display as plain text.
 
 **Entry points:**
 - `main.py` — CLI version, reads config from `.env`
-- `main_gui.py` — GUI version, reads config from `environments.json`
+- `main_gui.py` — GUI version, reads config from `environments.json`. Sets app icon from `1f310.ico`.
 
 ## Configuration
 
@@ -67,3 +68,5 @@ Note: `.env` uses `LOG_PATH` (not `PATH`) to avoid collision with the system PAT
 - `core/ssh_client.py` uses callbacks instead of print() so both CLI and GUI can use the same core logic.
 - GUI uses QThread for non-blocking SSH operations with signal-based communication.
 - Log level detection regex (`\b(ERROR|FATAL|WARN(?:ING)?|INFO|DEBUG)\b`) is duplicated in `log_viewer.py` and `gui/log_widget.py` — keep them in sync if changed.
+- Search bar has two separate signals: `search_changed` (text/case changed, triggers `update_matches` + scroll) and `navigate` (prev/next button, only scrolls to current match). Do not merge them — recomputing matches on navigate would reset the current index.
+- `LogWidget.append_log` with `auto_scroll=False` uses a temporary `QTextCursor(self.document())` instead of `self.textCursor()` to avoid `setTextCursor` triggering viewport scroll.

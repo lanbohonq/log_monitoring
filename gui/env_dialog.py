@@ -136,10 +136,8 @@ class EnvEditDialog(QDialog):
         self.port_spin.setValue(int(self._env.get("port", 22)))
         self.username_edit = QLineEdit(self._env.get("username", ""))
         self.password_edit = QLineEdit(self._env.get("password", ""))
-        self.password_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.root_user_edit = QLineEdit(self._env.get("root_user", ""))
         self.root_pass_edit = QLineEdit(self._env.get("root_pass", ""))
-        self.root_pass_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.log_path_edit = QLineEdit(self._env.get("log_path", "/var/log/syslog"))
 
         form.addRow("名称:", self.name_edit)

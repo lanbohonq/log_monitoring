@@ -39,10 +39,10 @@ class SearchBar(QWidget):
         self.match_label.setMinimumWidth(60)
         self.match_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self.btn_scroll = QPushButton("滚动:关")
-        self.btn_scroll.setFixedWidth(60)
+        self.btn_scroll = QPushButton("日志滚动")
         self.btn_scroll.setCheckable(True)
         self.btn_scroll.setChecked(False)
+        self.btn_scroll.setStyleSheet("color: #888888;")
         self.btn_scroll.toggled.connect(self._on_scroll_toggled)
 
         layout.addWidget(QLabel("搜索:"))
@@ -60,7 +60,10 @@ class SearchBar(QWidget):
 
     def _on_scroll_toggled(self, checked: bool):
         self._auto_scroll = checked
-        self.btn_scroll.setText("滚动:开" if checked else "滚动:关")
+        if checked:
+            self.btn_scroll.setStyleSheet("color: #FFFFFF;")
+        else:
+            self.btn_scroll.setStyleSheet("color: #888888;")
 
     def is_auto_scroll(self) -> bool:
         return self._auto_scroll
