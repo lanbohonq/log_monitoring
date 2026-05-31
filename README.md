@@ -31,7 +31,6 @@ PORT=22
 USERNAME=lan
 PASSWORD=your_password
 
-ROOT_USER=
 ROOT_PASS=
 
 LOG_PATH=/var/log/syslog
@@ -53,24 +52,37 @@ python main_gui.py
 2. 在下拉菜单选择环境，点击「连接」
 3. 中间区域显示全量日志，底部左侧勾选过滤级别，右侧显示过滤结果
 
+### 打包为 exe
+
+项目使用 PyInstaller 打包为独立可执行文件，spec 文件为 `LogMonitoringTool.spec`：
+
+```bash
+pyinstaller LogMonitoringTool.spec
+```
+
+打包产物位于 `dist/` 目录，为无控制台的窗口程序。
+
 ## 项目结构
 
 ```
 log_monitoring/
-├── main.py               # CLI 入口
-├── main_gui.py           # GUI 入口
+├── main.py               # CLI 入口（使用根目录模块）
+├── main_gui.py           # GUI 入口（使用 core/ 和 gui/ 模块）
+├── config.py             # CLI 配置读取（.env）
+├── ssh_client.py         # CLI 专用 SSH 客户端
+├── log_viewer.py         # CLI 日志级别检测与 ANSI 着色
 ├── core/
-│   ├── ssh_client.py     # SSH 连接与 root 切换
-│   ├── env_manager.py    # 环境配置管理（JSON）
-│   └── log_viewer.py     # 日志级别检测
+│   ├── ssh_client.py     # 共享 SSH 客户端（回调式 API，供 GUI 使用）
+│   └── env_manager.py    # 环境配置 CRUD（environments.json）
 ├── gui/
 │   ├── main_window.py    # 主窗口布局
 │   ├── env_dialog.py     # 环境管理弹窗
-│   ├── log_widget.py     # 日志显示组件
+│   ├── log_widget.py     # 日志显示组件（Qt 着色，10000 行上限）
 │   ├── filter_widget.py  # 日志级别过滤
-│   └── ssh_worker.py     # SSH 异步工作线程
+│   └── ssh_worker.py     # SSH 异步工作线程（QThread）
 ├── .env                  # CLI 配置文件
-└── environments.json     # GUI 环境配置
+├── environments.json     # GUI 环境配置
+└── LogMonitoringTool.spec # PyInstaller 打包配置
 ```
 
 ## 配置说明
@@ -81,7 +93,6 @@ log_monitoring/
 | PORT | SSH 端口，默认 22 |
 | USERNAME | SSH 用户名 |
 | PASSWORD | SSH 密码 |
-| ROOT_USER | root 用户名（可选） |
 | ROOT_PASS | root 密码（可选，为空则用当前用户密码通过 sudo 切换） |
 | LOG_PATH | 要监控的日志文件路径 |
 
