@@ -26,14 +26,15 @@ pip install -r requirements.txt
 1. 编辑 `.env` 文件配置服务器信息：
 
 ```
-HOST=192.168.31.11
+HOST=<host>
 PORT=22
-USERNAME=lan
-PASSWORD=your_password
+USERNAME=<USERNAME>
+PASSWORD=<PASSWORD>
 
-ROOT_PASS=
+ROOT_USER=<ROOT_USER>
+ROOT_PASS=<ROOT_PASS>
 
-LOG_PATH=/var/log/syslog
+LOG_PATH=/path/to/.log
 ```
 
 2. 运行：
