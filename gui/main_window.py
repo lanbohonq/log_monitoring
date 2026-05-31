@@ -15,7 +15,7 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("日志监控工具")
+        self.setWindowTitle("Log Monitoring Tool")
         self.setMinimumSize(1000, 700)
         self._worker = None
         self._setup_ui()
@@ -26,12 +26,6 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         main_layout = QVBoxLayout(central)
 
-        # Menu bar
-        menubar = self.menuBar()
-        env_menu = menubar.addMenu("环境配置")
-        env_action = env_menu.addAction("管理环境")
-        env_action.triggered.connect(self._open_env_dialog)
-
         # Toolbar
         toolbar = QHBoxLayout()
         self.env_combo = QComboBox()
@@ -39,16 +33,19 @@ class MainWindow(QMainWindow):
         self.btn_connect = QPushButton("连接")
         self.btn_disconnect = QPushButton("断开")
         self.btn_disconnect.setEnabled(False)
+        self.btn_manage_env = QPushButton("管理环境")
         self.status_label = QLabel("未连接")
         self.status_label.setStyleSheet("color: gray;")
 
         self.btn_connect.clicked.connect(self._connect)
         self.btn_disconnect.clicked.connect(self._disconnect)
+        self.btn_manage_env.clicked.connect(self._open_env_dialog)
 
         toolbar.addWidget(QLabel("环境:"))
         toolbar.addWidget(self.env_combo)
         toolbar.addWidget(self.btn_connect)
         toolbar.addWidget(self.btn_disconnect)
+        toolbar.addWidget(self.btn_manage_env)
         toolbar.addStretch()
         toolbar.addWidget(self.status_label)
         main_layout.addLayout(toolbar)
