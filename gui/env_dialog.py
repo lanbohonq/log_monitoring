@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QPushButton, QLineEdit, QFormLayout, QDialogButtonBox, QMessageBox,
     QHeaderView, QSpinBox
 )
+from PySide6.QtCore import QThread, Signal
 from core import env_manager
 
 
@@ -86,6 +87,33 @@ class EnvDialog(QDialog):
             self._load_envs()
 
 
+class TestConnectionWorker(QThread):
+    """Worker thread for testing SSH connection."""
+    success = Signal(str)
+    error = Signal(str)
+
+    def __init__(self, env_data: dict):
+        super().__init__()
+        self.env_data = env_data
+
+    def run(self):
+        try:
+            from core.ssh_client import SSHClient
+            client = SSHClient(
+                host=self.env_data["host"],
+                port=int(self.env_data.get("port", 22)),
+                username=self.env_data["username"],
+                password=self.env_data["password"],
+                root_pass=self.env_data.get("root_pass", ""),
+            )
+            client.connect()
+            client.switch_to_root()
+            client.close()
+            self.success.emit("连接成功，已获取 root 权限")
+        except Exception as e:
+            self.error.emit(str(e))
+
+
 class EnvEditDialog(QDialog):
     """Environment add/edit dialog."""
 
@@ -94,6 +122,7 @@ class EnvEditDialog(QDialog):
         self.setWindowTitle("编辑环境" if env else "添加环境")
         self.setMinimumWidth(400)
         self._env = env or {}
+        self._worker = None
         self._setup_ui()
 
     def _setup_ui(self):
@@ -124,12 +153,55 @@ class EnvEditDialog(QDialog):
 
         layout.addLayout(form)
 
+        # Bottom buttons: test on left, ok/cancel on right
+        btn_layout = QHBoxLayout()
+        self.btn_test = QPushButton("测试连接")
+        self.btn_test.clicked.connect(self._test_connection)
+        btn_layout.addWidget(self.btn_test)
+        btn_layout.addStretch()
+
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
         )
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        btn_layout.addWidget(buttons)
+        layout.addLayout(btn_layout)
+
+    def _test_connection(self):
+        """Test SSH connection with current form data."""
+        host = self.host_edit.text().strip()
+        username = self.username_edit.text().strip()
+        password = self.password_edit.text().strip()
+        if not host or not username or not password:
+            QMessageBox.warning(self, "提示", "请填写主机、用户名和密码")
+            return
+
+        self.btn_test.setEnabled(False)
+        self.btn_test.setText("测试中...")
+
+        env_data = {
+            "host": host,
+            "port": self.port_spin.value(),
+            "username": username,
+            "password": password,
+            "root_pass": self.root_pass_edit.text().strip(),
+        }
+        self._worker = TestConnectionWorker(env_data)
+        self._worker.success.connect(self._on_test_success)
+        self._worker.error.connect(self._on_test_error)
+        self._worker.finished.connect(self._on_test_done)
+        self._worker.start()
+
+    def _on_test_success(self, msg: str):
+        QMessageBox.information(self, "成功", msg)
+
+    def _on_test_error(self, error: str):
+        QMessageBox.critical(self, "失败", f"连接失败：{error}")
+
+    def _on_test_done(self):
+        self.btn_test.setEnabled(True)
+        self.btn_test.setText("测试连接")
 
     def get_data(self) -> dict:
         """Return environment data from form."""
